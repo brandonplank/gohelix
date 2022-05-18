@@ -1,9 +1,8 @@
 package gohelix
 
 import (
-	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -62,18 +61,7 @@ func (h *Helix) GetOAuthToken() Token {
 		ClientSecret: h.ClientSecret,
 		GrantType:    "client_credentials",
 	}, "", "\t")
-	req, err := http.NewRequest("POST", "https://id.twitch.tv/oauth2/token", bytes.NewReader(payload))
-	if err != nil {
-		log.Println(err)
-	}
-	req.Header = http.Header{
-		"Content-Type": []string{"application/json"},
-	}
-	res, err := h.HttpClient.Do(req)
-	if err != nil {
-		log.Println(err)
-	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := h.Request("POST", "https://id.twitch.tv/oauth2/token", payload, map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		log.Println(err)
 	}
@@ -87,26 +75,13 @@ func (h *Helix) GetOAuthToken() Token {
 }
 
 func (h *Helix) GetStream(name string) Stream {
-	req, err := http.NewRequest("GET", "https://api.twitch.tv/helix/streams?user_login="+name, nil)
+	body, err := h.Request("GET", "https://api.twitch.tv/helix/streams?user_login="+name, nil, map[string]string{
+		"Client-ID":     h.ClientId,
+		"Authorization": "Bearer " + h.ClientOAuth,
+	})
 	if err != nil {
-		log.Println(err)
+		log.Println(err.Error())
 	}
-
-	req.Header = http.Header{
-		"Client-ID":     []string{"m2pipnmdfk93o5pexx1h19vowkpkxp"},
-		"Authorization": []string{"Bearer " + h.ClientOAuth},
-	}
-
-	res, err := h.HttpClient.Do(req)
-	if err != nil {
-		log.Println(err)
-	}
-
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Println(err)
-	}
-
 	var stream Stream
 	err = json.Unmarshal(body, &stream)
 	if err != nil {
@@ -115,9 +90,12 @@ func (h *Helix) GetStream(name string) Stream {
 	return stream
 }
 
-func New(options *Options) *Helix {
+func New(options *Options) (*Helix, error) {
+	if len(options.ClientId) < 1 || len(options.ClientSecret) < 1 {
+		return nil, errors.New("please set client_id and client_secret")
+	}
 	return &Helix{
 		ClientId:     options.ClientId,
 		ClientSecret: options.ClientSecret,
-	}
+	}, nil
 }
