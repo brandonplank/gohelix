@@ -18,5 +18,5 @@ func init() {
 func TestNew(t *testing.T) {
 	new, _ := New(&Options{ClientId: os.Getenv("CLIENT_ID"), ClientSecret: os.Getenv("CLIENT_SECRET")})
 	_ = new.GetOAuthToken()
-	log.Println(new.GetStream("lucroan").Data[0])
+	log.Println(new.GetStream("coconutb"))
 }

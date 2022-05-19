@@ -61,7 +61,7 @@ func (h *Helix) GetOAuthToken() Token {
 		ClientSecret: h.ClientSecret,
 		GrantType:    "client_credentials",
 	}, "", "\t")
-	body, err := h.Request("POST", "https://id.twitch.tv/oauth2/token", payload, map[string]string{"Content-Type": "application/json"})
+	body, _, err := h.Request("POST", "https://id.twitch.tv/oauth2/token", payload, map[string]string{"Content-Type": "application/json"})
 	if err != nil {
 		log.Println(err)
 	}
@@ -75,7 +75,8 @@ func (h *Helix) GetOAuthToken() Token {
 }
 
 func (h *Helix) GetStream(name string) Stream {
-	body, err := h.Request("GET", "https://api.twitch.tv/helix/streams?user_login="+name, nil, map[string]string{
+	h.setTokenIfNotValid()
+	body, _, err := h.Request("GET", "https://api.twitch.tv/helix/streams?user_login="+name, nil, map[string]string{
 		"Client-ID":     h.ClientId,
 		"Authorization": "Bearer " + h.ClientOAuth,
 	})
@@ -88,6 +89,26 @@ func (h *Helix) GetStream(name string) Stream {
 		log.Println(err.Error())
 	}
 	return stream
+}
+
+func (h *Helix) IsTokenValid() bool {
+	_, status, err := h.Request("GET", "https://id.twitch.tv/oauth2/validate", nil, map[string]string{
+		"Authorization": "OAuth " + h.ClientOAuth,
+	})
+	if err != nil {
+		log.Println(err.Error())
+	}
+	if status == 401 && status != 200 {
+		return false
+	} else {
+		return true
+	}
+}
+
+func (h *Helix) setTokenIfNotValid() {
+	if !h.IsTokenValid() {
+		h.GetOAuthToken()
+	}
 }
 
 func New(options *Options) (*Helix, error) {

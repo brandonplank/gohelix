@@ -7,19 +7,19 @@ import (
 	"net/http"
 )
 
-func (h *Helix) Request(method string, url string, body []byte, headers map[string]string) ([]byte, error) {
+func (h *Helix) Request(method string, url string, body []byte, headers map[string]string) ([]byte, int, error) {
 	// Reset HttpClient
 	h.HttpClient = http.Client{}
 	req, err := http.NewRequest(method, url, bytes.NewReader(body))
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
 	res, err := h.HttpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, res.StatusCode, err
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -29,7 +29,7 @@ func (h *Helix) Request(method string, url string, body []byte, headers map[stri
 	}(res.Body)
 	reqBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, res.StatusCode, err
 	}
-	return reqBody, nil
+	return reqBody, res.StatusCode, nil
 }
