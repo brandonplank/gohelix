@@ -98,7 +98,7 @@ func (h *Helix) IsTokenValid() bool {
 	if err != nil {
 		log.Println(err.Error())
 	}
-	if status == 401 && status != 200 {
+	if status == 401 {
 		return false
 	} else {
 		return true
