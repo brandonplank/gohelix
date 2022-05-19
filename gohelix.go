@@ -100,13 +100,12 @@ func (h *Helix) IsTokenValid() bool {
 	}
 	if status == 401 {
 		return false
-	} else {
-		return true
 	}
+	return true
 }
 
 func (h *Helix) setTokenIfNotValid() {
-	if !h.IsTokenValid() {
+	if len(h.ClientOAuth) == 0 || !h.IsTokenValid() {
 		h.GetOAuthToken()
 	}
 }
